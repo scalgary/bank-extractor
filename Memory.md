@@ -61,7 +61,7 @@ bank-extractor/
 ├── .env                     # real values — gitignored
 ├── .env.example             # template — committed to git
 ├── .gitignore
-├── pyproject.toml           # uv deps: main + dev group
+├── pyproject.toml           # uv deps: main + dev group (created via uv init)
 └── docker-compose.yml       # prod only (Phase 4+)
 ```
 
@@ -82,9 +82,10 @@ OUTPUT_DIR=./output
 JUPYTER_PORT=8888
 API_PORT=8000
 UI_PORT=8501
+APP_ENV=dev   # dev | prod
 ```
 
-On RunPod: change `INPUT_DIR` and `OUTPUT_DIR` to `/workspace/input` and `/workspace/output`.
+On RunPod: change `INPUT_DIR` and `OUTPUT_DIR` to `/workspace/input` and `/workspace/output`, and `APP_ENV=prod`.
 
 ---
 
@@ -98,6 +99,7 @@ make jupyter      # start JupyterLab on port 8888
 make test         # run pytest with coverage
 make lint         # run ruff
 make reset        # clear input/, output/, logs/
+make session-end  # save bash history and prompt to exit container
 ```
 
 ---
@@ -133,7 +135,7 @@ git push
 
 ```bash
 # 1. Inside container — save console history
-fc -l 1 > docs/history/YYYY-MM-DD_session.sh
+make session-end
 
 # 2. Exit container
 # CMD+SHIFT+P → "Dev Containers: Reopen Folder Locally"
@@ -168,6 +170,7 @@ docker system prune -a
 |---|---|---|
 | 0 | ✅ | GitHub repo created |
 | 1 | ✅ | Devcontainer + Ollama + phi3:mini working |
+| 1.5 | ✅ | Dev environment hardening (Jupyter, APP_ENV, session-end) |
 | 2 | 🔜 | Local MVP: fake PDF → CSV with tags |
 | 3 | ⏳ | Jupyter exploration + prompt tuning |
 | 4 | ⏳ | FastAPI + Streamlit |
@@ -247,6 +250,51 @@ docker: open .env: no such file or directory
 #### ❌ `postCreateCommand` failing with Ollama
 **Cause:** Ollama not ready during build.
 **Fix:** Removed from `setup.sh`. Use `make serve` + `make pull-model` manually.
+
+---
+
+## Phase 1.5 — Dev Environment Hardening ✅
+
+**Branch:** `main` (exception — dev tooling only)
+
+### Changes made
+
+#### 1. `APP_ENV` variable added
+- Controls dev vs prod behavior in `setup.sh`
+- Added to `.env` and `.env.example`
+- `dev` → installs Jupyter + dev deps
+- `prod` → skips dev deps
+
+#### 2. `setup.sh` updated
+- Checks `APP_ENV` before installing dev dependencies
+- Fixed `uv sync --extra dev` → `uv sync --group dev`
+- Dev deps (jupyterlab, ipykernel, pytest, ruff) only installed when `APP_ENV=dev`
+
+#### 3. `pyproject.toml` created
+- Run `uv init` inside container (was missing — caused Jupyter install failure)
+- ⚠️ Must exist before `setup.sh` can install deps
+
+#### 4. `make session-end` added to Makefile
+- Saves bash history to `docs/history/YYYY-MM-DD_session.sh`
+- Uses `history -w` (not `fc` — not available in sh)
+
+#### 5. `devcontainer.json` updated
+- Added `"jupyter.jupyterServerType": "local"`
+- `postStartCommand`: `ollama serve & make jupyter`
+- `"target": "dev"` considered but dropped — no real benefit with single Dockerfile
+
+### Errors encountered
+
+#### ❌ `fc: not found` in Makefile
+**Cause:** `fc` is bash-only, Makefile uses `sh`.
+**Fix:** Use `bash -c 'history -w ...'` instead.
+
+#### ❌ `uv sync --extra dev` invalid
+**Fix:** Use `uv sync --group dev`.
+
+#### ❌ Jupyter not found after setup
+**Cause:** `pyproject.toml` was missing — `uv init` was never run.
+**Fix:** Run `uv init` first, then `bash .devcontainer/setup.sh`.
 
 ---
 

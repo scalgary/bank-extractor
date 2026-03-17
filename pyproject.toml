@@ -1,0 +1,25 @@
+[project]
+name = "bank-extractor"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.135.1",
+    "httpx>=0.28.1",
+    "pandas>=2.3.3",
+    "pdfplumber>=0.11.9",
+    "python-dotenv>=1.2.2",
+    "rich>=14.3.3",
+    "streamlit>=1.55.0",
+    "uvicorn>=0.42.0",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
+    "jupyterlab>=4.5.6",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.15.6",
+]
