@@ -203,6 +203,7 @@ cd bank-extractor
 
 ```bash
 touch .env
+touch .env.example
 # then fill in values from Environment Variables section above
 ```
 
