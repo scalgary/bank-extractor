@@ -1,4 +1,4 @@
-.PHONY: help pull-model serve test lint jupyter run reset
+.PHONY: help pull-model serve test lint jupyter run reset session-end
 
 help:
 	@echo "Available commands:"
@@ -9,6 +9,7 @@ help:
 	@echo "  make test         Run tests"
 	@echo "  make lint         Run ruff linter"
 	@echo "  make reset        Clear input, output, logs"
+	@echo "  make session-end  Save history and exit container"
 
 pull-model:
 	ollama pull $${OLLAMA_MODEL:-phi3:mini}
@@ -31,3 +32,9 @@ lint:
 reset:
 	rm -rf input/* output/* logs/*
 	@echo "✅ Reset complete"
+
+session-end:
+	@mkdir -p docs/history
+	@bash -c 'history -w docs/history/$$(date +%Y-%m-%d)_session.sh'
+	@echo "✅ History saved"
+	@echo "👉 Now: CMD+SHIFT+P → Reopen Folder Locally"
