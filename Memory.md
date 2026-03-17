@@ -106,6 +106,8 @@ make reset        # clear input/, output/, logs/
 
 Always work on a branch — never commit directly to `main`.
 
+⚠️ Exception: Phase 0 and Phase 1 were committed directly to `main` (repo initialization). From Phase 2 onwards, always use branches.
+
 ```bash
 # Start of session
 git checkout main
@@ -175,6 +177,8 @@ docker system prune -a
 
 ## Phase 0 — GitHub Setup ✅
 
+**Branch:** `main` (exception — empty repo init)
+
 ```bash
 gh repo create bank-extractor --public --clone
 cd bank-extractor
@@ -183,6 +187,8 @@ cd bank-extractor
 ---
 
 ## Phase 1 — Project Structure ✅
+
+**Branch:** `main` (exception — initial project structure)
 
 ### Steps taken
 
