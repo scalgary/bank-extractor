@@ -1,0 +1,47 @@
+{
+  "name": "bank-extractor",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "runArgs": ["--env-file", ".env"],
+
+  "forwardPorts": [11434, 8888, 8000, 8501],
+  "portsAttributes": {
+    "11434": { "label": "Ollama" },
+    "8888":  { "label": "JupyterLab" },
+    "8000":  { "label": "FastAPI" },
+    "8501":  { "label": "Streamlit" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+        "charliermarsh.ruff",
+        "ms-toolsai.jupyter"
+      ],
+      "settings": {
+        "workbench.colorTheme": "Dark Modern",
+        "python.defaultInterpreterPath": "/workspace/.venv/bin/python",
+        "python.terminal.activateEnvironment": false,
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": false,
+        "python.linting.ruffEnabled": true,
+        "[python]": {
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+          }
+        },
+        "pylance.enabled": true,
+        "jupyter.askForKernelRestart": false,
+        "jupyter.interactiveWindow.creationMode": "perFile"
+      }
+    }
+  },
+  "remoteUser": "vscode",
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "ollama serve &"
+}
