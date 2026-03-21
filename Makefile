@@ -35,6 +35,6 @@ reset:
 
 session-end:
 	@mkdir -p docs/history
-	@bash -c 'history -w docs/history/$$(date +%Y-%m-%d)_session.sh'
+	@bash -c 'cat ~/.bash_history > docs/history/$$(date +%Y-%m-%d)_session.sh'
 	@echo "✅ History saved"
 	@echo "👉 Now: CMD+SHIFT+P → Reopen Folder Locally"
