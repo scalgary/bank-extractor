@@ -11,11 +11,14 @@ help:
 	@echo "  make reset        Clear input, output, logs"
 	@echo "  make session-end  Save history and exit container"
 
+include .env
+export
+
 pull-model:
-	ollama pull $${OLLAMA_MODEL:-phi3:mini}
+	ollama pull $(OLLAMA_MODEL)
 
 serve:
-	ollama serve &
+	OLLAMA_MAX_LOADED_MODELS=1 OLLAMA_NUM_PARALLEL=1 ollama serve &
 
 run:
 	uv run python app/process.py
