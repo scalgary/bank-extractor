@@ -3,3 +3,5 @@
 *_files/
 *_cache/
 *.html           # if you don't want rendered output
+
+data/
