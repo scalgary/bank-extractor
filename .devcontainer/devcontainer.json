@@ -1,10 +1,13 @@
 {
-  "name": "bank-extractor",
+  "name": "bank-extractor", //name folder
   "build": {
     "dockerfile": "Dockerfile",
     "context": ".."
   },
   "runArgs": ["--env-file", ".env"],
+  "features": {
+    "ghcr.io/rocker-org/devcontainer-features/quarto-cli:1": {}  // add this
+  },
 
   "forwardPorts": [11434, 8888, 8000, 8501],
   "portsAttributes": {
@@ -21,7 +24,9 @@
         "ms-python.vscode-pylance",
         "ms-python.debugpy",
         "charliermarsh.ruff",
-        "ms-toolsai.jupyter"
+        "ms-toolsai.jupyter",
+        "quarto.quarto"                // add this
+
       ],
       "settings": {
         "workbench.colorTheme": "Dark Modern",

@@ -1,0 +1,5 @@
+# Quarto
+.quarto/
+*_files/
+*_cache/
+*.html           # if you don't want rendered output
