@@ -17,13 +17,18 @@ if [ ! -f "uv.lock" ]; then
 else
     echo "📦 Found uv.lock - syncing..."
     if [ "${APP_ENV:-dev}" = "dev" ]; then
+        echo "🔧 Dev mode - adding dev dependencies..."
+
         uv sync --group dev
+        uv run python -m ipykernel install --user --name="${PROJECT_NAME}"  --display-name "${PROJECT_NAME}" \
+
     else
         uv sync
     fi
     echo "✅ Dependencies synced!"
 fi
 
+echo "export QUARTO_PYTHON=/workspaces/${PROJECT_NAME}/.venv/bin/python" >> ~/.bashrc
 echo ""
 echo "🎉 Setup complete!"
 echo "💡 Now run: make pull-model"
