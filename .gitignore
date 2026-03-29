@@ -5,3 +5,5 @@
 *.html           # if you don't want rendered output
 
 data/
+.DS_Store
+*.html

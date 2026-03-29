@@ -1,0 +1,192 @@
+---
+title: "GIC"
+format: 
+ html:
+  theme: cosmo
+  df-print: kable
+execute:
+ echo: false
+---
+
+# Suivi de mes placements
+. liste manuelle des differents placements
+
+
+
+```{python}
+import polars as pl
+from pathlib import Path
+import datetime
+from IPython.display import display, HTML
+
+def show(df):
+    display(HTML(df.to_pandas().to_html(index=False, classes="table table-striped table-hover table-sm")))
+
+COLUMN_NAMES = ["amount", "provider", "rate", "date", "compte", "owner","type"]
+
+MONTH_MAP = {
+    "JAN": "01", "FEB": "02", "MAR": "03", "APR": "04",
+    "MAY": "05", "JUN": "06", "JUL": "07", "AUG": "08",
+    "SEP": "09", "OCT": "10", "NOV": "11", "DEC": "12"
+}
+
+INPUT_PATH = "data/gic_bronze_manual.csv"
+OUTPUT_PATH = "data/gic_bronze.csv"
+
+```
+
+## Functions utiles
+### Parse date
+```{python}
+def parse_date(val: str) -> datetime.date:
+    val = val.strip()
+    day = val[:2]
+    month = MONTH_MAP[val[2:5].upper()]
+    year = "20" + val[5:]
+    return datetime.date.fromisoformat(f"{year}-{month}-{day}")
+```
+
+
+
+```{python}
+def load_csv(path: str | Path) -> pl.DataFrame:
+    df = pl.read_csv(
+        path,
+        has_header=False,
+        new_columns=COLUMN_NAMES,
+        infer_schema=False,
+    )
+
+    df = df.with_columns(pl.all().str.strip_chars()) #strip blank spaces
+
+
+    df = df.with_columns([
+        pl.col("amount").str.strip_chars().cast(pl.Float64),
+        pl.col("rate")
+          .str.strip_chars()
+          .str.replace("%", "")
+          .str.strip_chars()
+          .cast(pl.Float64)
+          .truediv(100)
+          .round(10), #digits apparaissaient
+
+    ])
+
+    df = df.with_columns(
+        pl.col("date").map_elements(parse_date, return_dtype=pl.Date)
+    )
+    df = df.sort("date")
+
+
+    return df
+```
+
+
+### Load 
+```{python}
+df = load_csv(INPUT_PATH)
+df.write_csv(OUTPUT_PATH)
+
+```
+
+
+## Find the issues
+```{python}
+#| output: asis
+def summarize_issues(df: pl.DataFrame) -> pl.DataFrame:
+    return (
+        df.group_by(["provider", "owner"])
+          .agg(pl.col("amount").sum().alias("total_amount"))
+          .with_columns(
+              (pl.col("total_amount")>100000).alias("Above_100K")
+          )
+          .sort("total_amount", descending=True)
+    )
+
+show(summarize_issues(df))
+summarize_issues(df).write_csv("data/lookup_gic.csv")
+
+```
+
+## Keep track of the timing
+
+
+```{python}
+def summarize_timing(df: pl.DataFrame) -> pl.DataFrame:
+    return (
+        df.with_columns(
+            pl.col("date").dt.strftime("%Y-%m").alias("year_month")
+        )
+        .group_by(["year_month","type"])
+        .agg(pl.col("amount").sum().alias("total_amount"))
+        .sort(["year_month","type"])
+    )
+show(summarize_timing(df))
+summarize_timing(df).write_csv("data/timing_gic.csv")
+
+
+```
+
+## Summary
+
+
+```{python}
+#| output: asis
+TYPE_ORDER = ["TOTAL", "NR", "RRSP"]
+
+def compute_summary(df: pl.DataFrame) -> pl.DataFrame:
+
+    summary = (
+        df.with_columns(
+            (pl.col("amount") * pl.col("rate")).alias("interest")
+        )
+        .group_by("type")
+        .agg(
+            pl.col("amount").sum().alias("sum_total"),
+            pl.col("interest").sum().alias("sum_interest")
+        )
+        .pipe(lambda df: pl.concat([
+            pl.DataFrame({
+                "type": ["TOTAL"],
+                "sum_total": [df["sum_total"].sum()],
+                "sum_interest": [df["sum_interest"].sum()]
+            }),
+            df
+        ]))
+        .with_columns(pl.col("type").cast(pl.Enum(TYPE_ORDER)))
+        .sort("type")
+    )
+
+    return summary
+
+show(compute_summary(df))
+```
+
+
+
+```{python}
+show(compute_summary(df.filter(pl.col("owner")=="Sandrine")))
+```
+
+
+```{python}
+result = (
+    df.with_columns(
+        (pl.col("amount") * pl.col("rate")).alias("interest")
+    )
+    .group_by(["type"])
+    .agg([
+        pl.col("amount").sum().alias("sum_total"),
+        pl.col("interest").sum().alias("sum_interest")
+    ])
+)
+
+total_row = pl.DataFrame({
+    "type": ["TOTAL"],
+    "sum_total": [result["sum_total"].sum()],
+    "sum_interest": [result["sum_interest"].sum()]
+})
+
+result = pl.concat([result, total_row])
+show(result)
+```
